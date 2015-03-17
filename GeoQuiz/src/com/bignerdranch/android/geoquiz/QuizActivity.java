@@ -15,6 +15,7 @@ import android.widget.Toast;
 public class QuizActivity extends Activity {
 	private static final String TAG = "QuizActivity";
 	private static final String KEY_INDEX = "index";
+	private static final String KEY_CHEAT = "cheat";
 	private Button mTrueButton;
 	private Button mFalseButton;
 	private Button mNextButton;
@@ -31,12 +32,25 @@ public class QuizActivity extends Activity {
 	};
 	
 	private int mCurrentIndex = 0;
-	
+	//private int mCheatIndex = 0;
 	private boolean mIsCheater;
-
+	private int mCheatCount = 0;
+    private int[] mCheats = new int[mQuestionBank.length];
+	
 	private void updateQuestion() {
 		int question = mQuestionBank[mCurrentIndex].getQuestion();
 		mQuestionTextView.setText(question);
+	}
+	
+	private boolean isUserCheater()
+	{
+		// Check if instance of cheating on this question
+		for(int cheat : mCheats)
+			if(cheat == mCurrentIndex)
+				return true;
+		
+		// Otherwise, user didn't cheat
+		return false;
 	}
 	
 	@Override
@@ -44,13 +58,19 @@ public class QuizActivity extends Activity {
 	{
 		if(data == null) return;
 		mIsCheater = data.getBooleanExtra(CheatActivity.EXTRA_ANSWER_SHOWN, false);
+		// If user cheated, save index they cheated on
+		if(mIsCheater) 
+		{
+			mCheats[mCheatCount] = mCurrentIndex;
+			mCheatCount++;
+		}
 	}
 	
 	private void checkAnswer(boolean userPressedTrue){
 		boolean answerIsTrue = mQuestionBank[mCurrentIndex].isTrueQuestion();
 		
 		int messageResId = 0;
-		if(mIsCheater)
+		if(isUserCheater())
 			messageResId = R.string.judgment_toast;
 		else
 		{
@@ -72,9 +92,13 @@ public class QuizActivity extends Activity {
         
         mQuestionTextView = (TextView)findViewById(R.id.question_next_view);
         
+        for(int i = 0; i < mCheats.length; i++)
+        	mCheats[i] = -1;
+        
         if(savedInstanceState != null)
         {
         	mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+        	mIsCheater = savedInstanceState.getBoolean(KEY_CHEAT, true);
         }
         
         mTrueButton = (Button)findViewById(R.id.true_button);
@@ -128,6 +152,7 @@ public class QuizActivity extends Activity {
     	super.onSaveInstanceState(savedInstanceState);
     	Log.i(TAG, "onSaveInstanceState");
     	savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
+    	savedInstanceState.putBoolean(KEY_CHEAT, mIsCheater);
     }
     
     @Override
